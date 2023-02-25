@@ -56,211 +56,213 @@ class PassengerDashboardFragment : Fragment(R.layout.fragment_passenger_dashboar
     private lateinit var locationClient: FusedLocationProviderClient
 
     lateinit var binding: FragmentPassengerDashboardBinding
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
 
-        binding = FragmentPassengerDashboardBinding.bind(view)
-        Places.initialize(requireActivity().application, BuildConfig.MAPS_API_KEY)
-        locationClient = LocationServices.getFusedLocationProviderClient(requireContext())
-
-        mapView = binding.mapLayout.mapView
-        mapView?.onCreate(savedInstanceState)
-
-        requestPermission()
-
-        lifecycleScope.launch {
-            viewModel.uiState
-                //Only emit states when lifecycle of the fragment is started
-                .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
-                .distinctUntilChanged()
-                .collect { uiState ->
-                    updateUi(uiState)
-                }
-        }
-
-        viewModel.toastHandler = {
-            handleToast(it)
-        }
-
-        //This button is reused in most states so we add the listener here
-        binding.mapLayout.cancelButton.setOnClickListener { viewModel.cancelRide() }
-        binding.chatButton.setOnClickListener {
-            viewModel.openChat()
-        }
-        binding.toolbar.profileIcon.setOnClickListener { viewModel.goToProfile() }
-    }
-
-    private fun updateUi(uiState: PassengerDashboardUiState) {
-        //only make profile accessible when not in a ride
-        if (uiState != PassengerDashboardUiState.RideInactive) binding.toolbar.profileIcon.visibility =
-            View.GONE
-        else binding.toolbar.profileIcon.visibility = View.VISIBLE
-
-        when (uiState) {
-            is PassengerDashboardUiState.Arrived -> updateMessageButton(uiState.totalMessages)
-            is PassengerDashboardUiState.EnRoute -> updateMessageButton(uiState.totalMessages)
-            is PassengerDashboardUiState.PassengerPickUp -> updateMessageButton(uiState.totalMessages)
-            else -> Unit
-        }
-
-        when (uiState) {
-            PassengerDashboardUiState.Error -> viewModel.handleError()
-            PassengerDashboardUiState.Loading -> {
-                binding.loadingView.loadingLayout.visibility = View.VISIBLE
-            }
-            is PassengerDashboardUiState.RideInactive -> rideInactiveState()
-            is PassengerDashboardUiState.SearchingForDriver -> searchingForDriverState(uiState)
-            is PassengerDashboardUiState.PassengerPickUp -> passengerPickUp(uiState)
-            is PassengerDashboardUiState.EnRoute -> enRoute(uiState)
-            is PassengerDashboardUiState.Arrived -> arrived(uiState)
-        }
-
-        updateMap(uiState)
-    }
-
-    private fun updateMessageButton(messageCount: Int) {
-        binding.chatButton.text = if (messageCount == 0) getString(R.string.contact_driver)
-        else getString(R.string.you_have_messages)
-//        else buildString {
-//            append(messageCount)
-//            append(R.string.new_messages)
+    //UNCOMMENT THIS CODE ONCE YOU HAVE COMPLETED view_map_layout.xml
+//    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+//        super.onViewCreated(view, savedInstanceState)
+//
+//        binding = FragmentPassengerDashboardBinding.bind(view)
+//        Places.initialize(requireActivity().application, BuildConfig.MAPS_API_KEY)
+//        locationClient = LocationServices.getFusedLocationProviderClient(requireContext())
+//
+//        mapView = binding.mapLayout.mapView
+//        mapView?.onCreate(savedInstanceState)
+//
+//        requestPermission()
+//
+//        lifecycleScope.launch {
+//            viewModel.uiState
+//                //Only emit states when lifecycle of the fragment is started
+//                .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
+//                .distinctUntilChanged()
+//                .collect { uiState ->
+//                    updateUi(uiState)
+//                }
 //        }
-    }
-
-    private fun arrived(uiState: PassengerDashboardUiState.Arrived) {
-        binding.apply {
-            rideLayout.visibility = View.VISIBLE
-            loadingView.loadingLayout.visibility = View.GONE
-            searchingLayout.visibility = View.GONE
-            rideComplete.rideCompleteLayout.visibility = View.VISIBLE
-
-            searchingForDriver.searchingForDriverLayout.visibility = View.GONE
-            //unbind recyclerview from adapter
-            autocompleteResults.adapter = null
-
-            mapLayout.subtitle.text = getString(R.string.destination)
-            mapLayout.address.text = uiState.destinationAddress
-
-            rideComplete.rideCompleteLayout.visibility = View.VISIBLE
-            rideComplete.advanceButton.visibility = View.GONE
-            driverName.text = uiState.driverName
-            Glide.with(requireContext())
-                .load(
-                    if (uiState.driverAvatar != "") uiState.driverAvatar
-                    else R.drawable.baseline_account_circle_24
-                )
-                .fitCenter()
-                .placeholder(
-                    CircularProgressDrawable(requireContext()).apply {
-                        setColorSchemeColors(
-                            ContextCompat.getColor(requireContext(), R.color.color_light_grey)
-                        )
-
-                        strokeWidth = 2f
-                        centerRadius = 48f
-                        start()
-                    }
-                )
-                .into(binding.avatar)
-
-            driverInfoLayout.visibility = View.VISIBLE
-        }
-    }
-
-    private fun enRoute(uiState: PassengerDashboardUiState.EnRoute) {
-        binding.apply {
-            rideLayout.visibility = View.VISIBLE
-            loadingView.loadingLayout.visibility = View.GONE
-            searchingLayout.visibility = View.GONE
-
-            searchingForDriver.searchingForDriverLayout.visibility = View.GONE
-            //unbind recyclerview from adapter
-            autocompleteResults.adapter = null
-
-            mapLayout.subtitle.text = getString(R.string.destination)
-            mapLayout.address.text = uiState.destinationAddress
-
-            driverName.text = uiState.driverName
-            Glide.with(requireContext())
-                .load(
-                    if (uiState.driverAvatar != "") uiState.driverAvatar
-                    else R.drawable.baseline_account_circle_24
-                )
-                .fitCenter()
-                .placeholder(
-                    CircularProgressDrawable(requireContext()).apply {
-                        setColorSchemeColors(
-                            ContextCompat.getColor(requireContext(), R.color.color_light_grey)
-                        )
-
-                        strokeWidth = 2f
-                        centerRadius = 48f
-                        start()
-                    }
-                )
-                .into(binding.avatar)
-
-            driverInfoLayout.visibility = View.VISIBLE
-            rideComplete.rideCompleteLayout.visibility = View.GONE
-
-        }
-    }
-
-    private fun passengerPickUp(uiState: PassengerDashboardUiState.PassengerPickUp) {
-        binding.apply {
-            rideLayout.visibility = View.VISIBLE
-            loadingView.loadingLayout.visibility = View.GONE
-            searchingLayout.visibility = View.GONE
-
-            searchingForDriver.searchingForDriverLayout.visibility = View.GONE
-            //unbind recyclerview from adapter
-            autocompleteResults.adapter = null
-
-            mapLayout.subtitle.text = getString(R.string.destination)
-            mapLayout.address.text = uiState.destinationAddress
-
-            driverName.text = uiState.driverName
-            Glide.with(requireContext())
-                .load(
-                    if (uiState.driverAvatar != "") uiState.driverAvatar
-                    else R.drawable.baseline_account_circle_24
-                )
-                .fitCenter()
-                .placeholder(
-                    CircularProgressDrawable(requireContext()).apply {
-                        setColorSchemeColors(
-                            ContextCompat.getColor(requireContext(), R.color.color_light_grey)
-                        )
-
-                        strokeWidth = 2f
-                        centerRadius = 48f
-                        start()
-                    }
-                )
-                .into(binding.avatar)
-
-            driverInfoLayout.visibility = View.VISIBLE
-            rideComplete.rideCompleteLayout.visibility = View.GONE
-        }
-    }
-
-    private fun searchingForDriverState(uiState: PassengerDashboardUiState.SearchingForDriver) {
-        binding.apply {
-            rideLayout.visibility = View.VISIBLE
-            loadingView.loadingLayout.visibility = View.GONE
-            searchingLayout.visibility = View.GONE
-
-            driverInfoLayout.visibility = View.GONE
-            rideComplete.rideCompleteLayout.visibility = View.GONE
-
-            searchingForDriver.searchingForDriverLayout.visibility = View.VISIBLE
-            //unbind recyclerview from adapter
-            autocompleteResults.adapter = null
-
-            mapLayout.subtitle.text = getString(R.string.destination)
-            mapLayout.address.text = uiState.destinationAddress
-        }
-    }
+//
+//        viewModel.toastHandler = {
+//            handleToast(it)
+//        }
+//
+//        //This button is reused in most states so we add the listener here
+//        binding.mapLayout.cancelButton.setOnClickListener { viewModel.cancelRide() }
+//        binding.chatButton.setOnClickListener {
+//            viewModel.openChat()
+//        }
+//        binding.toolbar.profileIcon.setOnClickListener { viewModel.goToProfile() }
+//    }
+//
+//    private fun updateUi(uiState: PassengerDashboardUiState) {
+//        //only make profile accessible when not in a ride
+//        if (uiState != PassengerDashboardUiState.RideInactive) binding.toolbar.profileIcon.visibility =
+//            View.GONE
+//        else binding.toolbar.profileIcon.visibility = View.VISIBLE
+//
+//        when (uiState) {
+//            is PassengerDashboardUiState.Arrived -> updateMessageButton(uiState.totalMessages)
+//            is PassengerDashboardUiState.EnRoute -> updateMessageButton(uiState.totalMessages)
+//            is PassengerDashboardUiState.PassengerPickUp -> updateMessageButton(uiState.totalMessages)
+//            else -> Unit
+//        }
+//
+//        when (uiState) {
+//            PassengerDashboardUiState.Error -> viewModel.handleError()
+//            PassengerDashboardUiState.Loading -> {
+//                binding.loadingView.loadingLayout.visibility = View.VISIBLE
+//            }
+//            is PassengerDashboardUiState.RideInactive -> rideInactiveState()
+//            is PassengerDashboardUiState.SearchingForDriver -> searchingForDriverState(uiState)
+//            is PassengerDashboardUiState.PassengerPickUp -> passengerPickUp(uiState)
+//            is PassengerDashboardUiState.EnRoute -> enRoute(uiState)
+//            is PassengerDashboardUiState.Arrived -> arrived(uiState)
+//        }
+//
+//        updateMap(uiState)
+//    }
+//
+//    private fun updateMessageButton(messageCount: Int) {
+//        binding.chatButton.text = if (messageCount == 0) getString(R.string.contact_driver)
+//        else getString(R.string.you_have_messages)
+////        else buildString {
+////            append(messageCount)
+////            append(R.string.new_messages)
+////        }
+//    }
+//
+//    private fun arrived(uiState: PassengerDashboardUiState.Arrived) {
+//        binding.apply {
+//            rideLayout.visibility = View.VISIBLE
+//            loadingView.loadingLayout.visibility = View.GONE
+//            searchingLayout.visibility = View.GONE
+//            rideComplete.rideCompleteLayout.visibility = View.VISIBLE
+//
+//            searchingForDriver.searchingForDriverLayout.visibility = View.GONE
+//            //unbind recyclerview from adapter
+//            autocompleteResults.adapter = null
+//
+//            mapLayout.subtitle.text = getString(R.string.destination)
+//            mapLayout.address.text = uiState.destinationAddress
+//
+//            rideComplete.rideCompleteLayout.visibility = View.VISIBLE
+//            rideComplete.advanceButton.visibility = View.GONE
+//            driverName.text = uiState.driverName
+//            Glide.with(requireContext())
+//                .load(
+//                    if (uiState.driverAvatar != "") uiState.driverAvatar
+//                    else R.drawable.baseline_account_circle_24
+//                )
+//                .fitCenter()
+//                .placeholder(
+//                    CircularProgressDrawable(requireContext()).apply {
+//                        setColorSchemeColors(
+//                            ContextCompat.getColor(requireContext(), R.color.color_light_grey)
+//                        )
+//
+//                        strokeWidth = 2f
+//                        centerRadius = 48f
+//                        start()
+//                    }
+//                )
+//                .into(binding.avatar)
+//
+//            driverInfoLayout.visibility = View.VISIBLE
+//        }
+//    }
+//
+//    private fun enRoute(uiState: PassengerDashboardUiState.EnRoute) {
+//        binding.apply {
+//            rideLayout.visibility = View.VISIBLE
+//            loadingView.loadingLayout.visibility = View.GONE
+//            searchingLayout.visibility = View.GONE
+//
+//            searchingForDriver.searchingForDriverLayout.visibility = View.GONE
+//            //unbind recyclerview from adapter
+//            autocompleteResults.adapter = null
+//
+//            mapLayout.subtitle.text = getString(R.string.destination)
+//            mapLayout.address.text = uiState.destinationAddress
+//
+//            driverName.text = uiState.driverName
+//            Glide.with(requireContext())
+//                .load(
+//                    if (uiState.driverAvatar != "") uiState.driverAvatar
+//                    else R.drawable.baseline_account_circle_24
+//                )
+//                .fitCenter()
+//                .placeholder(
+//                    CircularProgressDrawable(requireContext()).apply {
+//                        setColorSchemeColors(
+//                            ContextCompat.getColor(requireContext(), R.color.color_light_grey)
+//                        )
+//
+//                        strokeWidth = 2f
+//                        centerRadius = 48f
+//                        start()
+//                    }
+//                )
+//                .into(binding.avatar)
+//
+//            driverInfoLayout.visibility = View.VISIBLE
+//            rideComplete.rideCompleteLayout.visibility = View.GONE
+//
+//        }
+//    }
+//
+//    private fun passengerPickUp(uiState: PassengerDashboardUiState.PassengerPickUp) {
+//        binding.apply {
+//            rideLayout.visibility = View.VISIBLE
+//            loadingView.loadingLayout.visibility = View.GONE
+//            searchingLayout.visibility = View.GONE
+//
+//            searchingForDriver.searchingForDriverLayout.visibility = View.GONE
+//            //unbind recyclerview from adapter
+//            autocompleteResults.adapter = null
+//
+//            mapLayout.subtitle.text = getString(R.string.destination)
+//            mapLayout.address.text = uiState.destinationAddress
+//
+//            driverName.text = uiState.driverName
+//            Glide.with(requireContext())
+//                .load(
+//                    if (uiState.driverAvatar != "") uiState.driverAvatar
+//                    else R.drawable.baseline_account_circle_24
+//                )
+//                .fitCenter()
+//                .placeholder(
+//                    CircularProgressDrawable(requireContext()).apply {
+//                        setColorSchemeColors(
+//                            ContextCompat.getColor(requireContext(), R.color.color_light_grey)
+//                        )
+//
+//                        strokeWidth = 2f
+//                        centerRadius = 48f
+//                        start()
+//                    }
+//                )
+//                .into(binding.avatar)
+//
+//            driverInfoLayout.visibility = View.VISIBLE
+//            rideComplete.rideCompleteLayout.visibility = View.GONE
+//        }
+//    }
+//
+//    private fun searchingForDriverState(uiState: PassengerDashboardUiState.SearchingForDriver) {
+//        binding.apply {
+//            rideLayout.visibility = View.VISIBLE
+//            loadingView.loadingLayout.visibility = View.GONE
+//            searchingLayout.visibility = View.GONE
+//
+//            driverInfoLayout.visibility = View.GONE
+//            rideComplete.rideCompleteLayout.visibility = View.GONE
+//
+//            searchingForDriver.searchingForDriverLayout.visibility = View.VISIBLE
+//            //unbind recyclerview from adapter
+//            autocompleteResults.adapter = null
+//
+//            mapLayout.subtitle.text = getString(R.string.destination)
+//            mapLayout.address.text = uiState.destinationAddress
+//        }
+//    }
 
     /**
      * - Map is visible
