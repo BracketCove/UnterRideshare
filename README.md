@@ -25,16 +25,24 @@ Android.
 
 ## Resources
 [Google Cloud Setup](https://cloud.google.com/run/docs/setup)
+
 [Stream Android Docs](https://getstream.io/chat/sdk/android/)
+
 [Firebase Setup](https://firebase.google.com/docs/android/setup)
+
 [Simple-Stack](https://github.com/Zhuinden/simple-stack)
+
 [My YT Channel](https://www.youtube.com/channel/UCSwuCetC3YlO1Y7bqVW5GHg)
+
 [Follow me on twitter](https://twitter.com/wiseAss301)
 
 
 
 ## Acknowledgements
 Cyber Shark - Font choice
+
 Josh (CMYUI) - BE consulting
+
 Gabor Varadi (Zhuinden) - Navigation, DI, and Services with Simple-Stack
+
 Jaewoong Eum (Skydoves) - Stream Chat SDK and Flow integration
