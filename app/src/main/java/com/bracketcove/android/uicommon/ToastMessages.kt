@@ -1,0 +1,12 @@
+package com.bracketcove.android.uicommon
+
+enum class ToastMessages {
+    GENERIC_ERROR,
+    SERVICE_ERROR,
+    PERMISSION_ERROR,
+    INVALID_CREDENTIALS,
+    ACCOUNT_EXISTS,
+    UPDATE_SUCCESSFUL,
+    UNABLE_TO_RETRIEVE_COORDINATES,
+    UNABLE_TO_RETRIEVE_USER_COORDINATES
+}

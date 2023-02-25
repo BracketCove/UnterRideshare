@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    android:id="@+id/loadingLayout"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center">
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/passengersLoadingProgressBar"
+        android:layout_width="98dp"
+        android:layout_height="98dp"
+        app:indicatorColor="@color/color_primary" />
+
+    <TextView
+        android:id="@+id/searchingSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="32dp"
+        android:fontFamily="@font/poppins_light"
+        android:includeFontPadding="false"
+        android:text="@string/loading"
+        android:gravity="center"
+        android:textColor="@color/color_light_grey"
+        android:textSize="24sp" />
+</LinearLayout>
