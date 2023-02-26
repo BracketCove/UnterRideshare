@@ -586,12 +586,13 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
             object : LocationCallback() {
                 override fun onLocationResult(result: LocationResult) {
                     if (result.lastLocation != null) {
-                        viewModel.updateDriverLocation(
-                            com.google.maps.model.LatLng(
-                                result.lastLocation!!.latitude,
-                                result.lastLocation!!.longitude
-                            )
-                        )
+                        //UNCOMMENT THIS AFTER IMPLEMENTING DriverDashboardViewModel
+//                        viewModel.updateDriverLocation(
+//                            com.google.maps.model.LatLng(
+//                                result.lastLocation!!.latitude,
+//                                result.lastLocation!!.longitude
+//                            )
+//                        )
                     } else {
                         Toast.makeText(
                             requireContext(),
