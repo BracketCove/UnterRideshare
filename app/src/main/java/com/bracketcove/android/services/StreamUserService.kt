@@ -30,11 +30,15 @@ class StreamUserService(
     override suspend fun getUserById(userId: String): ServiceResult<UnterUser?> =
         withContext(Dispatchers.IO) {
             val currentUser = client.getCurrentUser()
+
+            //If the current user data matches the passed in ID, we just pass in the data associated
+            //with the current user.
             if (currentUser != null && currentUser.id == userId) {
                 val extraData = currentUser.extraData
                 val type: String? = extraData[KEY_TYPE] as String?
                 val status: String? = extraData[KEY_STATUS] as String?
 
+                //
                 if (currentUser.role == "user") updateRole(userId)
 
                 ServiceResult.Value(
@@ -48,7 +52,9 @@ class StreamUserService(
                         type = type ?: ""
                     )
                 )
-            } else if (currentUser != null && currentUser.id != userId){
+            }
+            //User exists but it doesn't match the user the passed in id
+            else if (currentUser != null && currentUser.id != userId){
                 val streamUser = User(
                     id = userId
                 )
@@ -82,7 +88,10 @@ class StreamUserService(
                     )
                     ServiceResult.Failure(Exception(getUserResult.error().message))
                 }
-            } else {
+            }
+
+            //this is equivalent to logging in basically
+            else {
                 val streamUser = User(
                     id = userId
                 )
@@ -143,30 +152,9 @@ class StreamUserService(
 
     override suspend fun initializeNewUser(user: UnterUser): ServiceResult<UnterUser?> =
         withContext(Dispatchers.IO) {
-            disconnectUser(user.userId)
-
-            delay(4000L)
-            val streamUser = user.let {
-                User(
-                    id = user.userId,
-                    name = user.username,
-                    extraData = mutableMapOf(
-                        KEY_STATUS to user.status,
-                        KEY_TYPE to user.type
-                    )
-                )
-            }
-
-            val devToken = client.devToken(user.userId)
-            val result = client.connectUser(streamUser, devToken).await()
-
-            if (result.isSuccess) {
-                ServiceResult.Value(
-                    user
-                )
-            } else {
-                ServiceResult.Failure(Exception(result.error().cause))
-            }
+            ServiceResult.Value(
+                user
+            )
         }
 
     private suspend fun disconnectUser(userId: String) {
