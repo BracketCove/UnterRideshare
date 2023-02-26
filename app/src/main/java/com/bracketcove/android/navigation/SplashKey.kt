@@ -11,6 +11,10 @@ import com.zhuinden.simplestackextensions.servicesktx.add
 import com.zhuinden.simplestackextensions.servicesktx.lookup
 import kotlinx.parcelize.Parcelize
 
+
+/**
+ * https://github.com/Zhuinden/simple-stack
+ */
 @Parcelize
 data class SplashKey(private val noArgsPlaceholder: String = "") : DefaultFragmentKey(),
     DefaultServiceProvider.HasServices {

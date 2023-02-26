@@ -51,6 +51,7 @@ class UnterApp: Application() {
 
         globalServices = GlobalServices.builder()
             .add(streamRideService)
+                //Rebind allows us to pass in an implementation but provide it as it's interface
             .rebind<RideService>(streamRideService)
             .add(streamUserService)
             .rebind<UserService>(streamUserService)
