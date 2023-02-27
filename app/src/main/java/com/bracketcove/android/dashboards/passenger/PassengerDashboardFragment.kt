@@ -340,72 +340,49 @@ class PassengerDashboardFragment : Fragment(R.layout.fragment_passenger_dashboar
             googleMap!!.clear()
             when (uiState) {
                 is PassengerDashboardUiState.SearchingForDriver -> {
-                    googleMap!!.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(
-                            LatLng(uiState.passengerLat, uiState.passengerLon),
-                            14f
-                        )
-                    )
+
                 }
                 is PassengerDashboardUiState.PassengerPickUp -> {
                     lifecycleScope.launch {
-                        val dirResult =
-                            DirectionsApi.newRequest((requireActivity().application as UnterApp).geoContext)
-                                .mode(TravelMode.DRIVING)
-                                .units(Unit.METRIC)
-                                //Change this appropriately
-                                .region("ca")
-                                .origin(
-                                    com.google.maps.model.LatLng(
-                                        uiState.passengerLat,
-                                        uiState.passengerLon
-                                    )
-                                )
-                                .destination(
-                                    com.google.maps.model.LatLng(
-                                        uiState.driverLat,
-                                        uiState.driverLon
-                                    ).toString()
-                                )
-                                .await()
 
-                        if (dirResult.routes?.first() != null &&
-                            dirResult.routes.isNotEmpty() &&
-                            dirResult.routes.first().legs.isNotEmpty()
-                        ) {
-                            dirResult.routes.first().let { route ->
-                                googleMap!!.addPolyline(
-                                    PolylineOptions().apply {
-                                        clickable(false)
-                                        addAll(
-                                            PolyUtil.decode(
-                                                route.overviewPolyline.encodedPath
-                                            )
-                                        )
-                                        color(
-                                            ContextCompat.getColor(
-                                                requireContext(),
-                                                R.color.color_primary
-                                            )
-                                        )
-                                    }
-                                )
 
-                                route.legs.first().let { leg ->
-                                    binding.distance.text = buildString {
-                                        append(getString(R.string.driver_is))
-                                        append(leg.distance.humanReadable)
-                                        append(getString(R.string.away))
-                                    }
-                                }
-                            }
-                        } else {
-                            Toast.makeText(
-                                requireContext(),
-                                R.string.unable_to_get_map_directions,
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+//                        if (dirResult.routes?.first() != null &&
+//                            dirResult.routes.isNotEmpty() &&
+//                            dirResult.routes.first().legs.isNotEmpty()
+//                        ) {
+//                            dirResult.routes.first().let { route ->
+//                                googleMap!!.addPolyline(
+//                                    PolylineOptions().apply {
+//                                        clickable(false)
+//                                        addAll(
+//                                            PolyUtil.decode(
+//                                                route.overviewPolyline.encodedPath
+//                                            )
+//                                        )
+//                                        color(
+//                                            ContextCompat.getColor(
+//                                                requireContext(),
+//                                                R.color.color_primary
+//                                            )
+//                                        )
+//                                    }
+//                                )
+//
+//                                route.legs.first().let { leg ->
+//                                    binding.distance.text = buildString {
+//                                        append(getString(R.string.driver_is))
+//                                        append(leg.distance.humanReadable)
+//                                        append(getString(R.string.away))
+//                                    }
+//                                }
+//                            }
+//                        } else {
+//                            Toast.makeText(
+//                                requireContext(),
+//                                R.string.unable_to_get_map_directions,
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//                        }
 
                         googleMap!!.addMarker(
                             MarkerOptions().apply {
@@ -536,6 +513,42 @@ class PassengerDashboardFragment : Fragment(R.layout.fragment_passenger_dashboar
         }
     }
 
+
+
+
+    private fun requestPermission() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            //permission not granted
+            requestPermissionLauncher.launch(
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        } else {
+            //begin map initialization
+            mapView?.getMapAsync(this)
+
+            //get user location
+            requestLocation()
+        }
+    }
+
+    val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) requestLocation()
+        else {
+            Toast.makeText(
+                requireContext(),
+                R.string.permissions_required_to_use_this_app,
+                Toast.LENGTH_LONG
+            ).show()
+            viewModel.handleError()
+        }
+    }
+
     @SuppressLint("MissingPermission")
     private fun requestLocation() {
         //This function is a great introduction to programming with the Android SDK ;)
@@ -559,7 +572,7 @@ class PassengerDashboardFragment : Fragment(R.layout.fragment_passenger_dashboar
                     LOCATION_REQUEST_INTERVAL
                 ).apply {
                     //only update if user moved more than 10 meters
-                    setMinUpdateDistanceMeters(0f)
+                    setMinUpdateDistanceMeters(10f)
                 }.build()
 
                 //determine if device settings are configured properly
@@ -616,39 +629,6 @@ class PassengerDashboardFragment : Fragment(R.layout.fragment_passenger_dashboar
                     viewModel.handleError()
                 }
             }
-    }
-
-    private fun requestPermission() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            //permission not granted
-            requestPermissionLauncher.launch(
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-        } else {
-            //begin map initialization
-            mapView?.getMapAsync(this)
-
-            //get user location
-            requestLocation()
-        }
-    }
-
-    val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) requestLocation()
-        else {
-            Toast.makeText(
-                requireContext(),
-                R.string.permissions_required_to_use_this_app,
-                Toast.LENGTH_LONG
-            ).show()
-            viewModel.handleError()
-        }
     }
 
     //So yeah, if you don't add this crap here, the MapView will be basically useless.
