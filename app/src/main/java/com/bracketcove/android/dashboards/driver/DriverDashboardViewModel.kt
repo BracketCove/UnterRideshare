@@ -20,10 +20,7 @@ import com.zhuinden.simplestack.History
 import com.zhuinden.simplestack.ScopedServices
 import com.zhuinden.simplestack.StateChange
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
 
 class DriverDashboardViewModel(
@@ -114,7 +111,7 @@ class DriverDashboardViewModel(
     //999 represents an impossible value, indicating we don't know the driver's location
     private val DEFAULT_LAT_OR_LON = 999.0
     private val _driverLocation = MutableStateFlow(LatLng(DEFAULT_LAT_OR_LON, DEFAULT_LAT_OR_LON))
-    private val _passengerList = rideService.openRides()
+    private var _passengerList = rideService.openRides()
 
     //I don't want a driver to be able to accept a ride unless we know their location first.
     val locationAwarePassengerList = combineTuple(_driverLocation, _passengerList).map {
@@ -202,6 +199,7 @@ class DriverDashboardViewModel(
             when (result) {
                 is ServiceResult.Failure -> toastHandler?.invoke(ToastMessages.SERVICE_ERROR)
                 is ServiceResult.Value -> {
+                    _passengerList = emptyFlow()
                     rideService.observeRideById(result.value)
                 }
             }
@@ -211,7 +209,12 @@ class DriverDashboardViewModel(
     }
 
     fun goToProfile() {
-        backstack.goTo(ProfileSettingsKey())
+        //normally we would use backStack.goTo(...), but we always want to reload the state
+        //of the dashboard
+        backstack.setHistory(
+            History.of(ProfileSettingsKey()),
+            StateChange.FORWARD
+        )
     }
 
     fun updateDriverLocation(latLng: LatLng) = launch(Dispatchers.Main) {
@@ -321,7 +324,10 @@ class DriverDashboardViewModel(
         val currentRide = _rideModel.first()
 
         if (currentRide is ServiceResult.Value && currentRide.value != null) {
-            backstack.goTo(ChatKey(currentRide.value.rideId))
+            backstack.setHistory(
+                History.of(ChatKey(currentRide.value!!.rideId)),
+                StateChange.FORWARD
+            )
         }
     }
 

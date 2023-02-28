@@ -211,6 +211,7 @@ class PassengerDashboardViewModel(
         when (result) {
             is ServiceResult.Failure -> toastHandler?.invoke(ToastMessages.SERVICE_ERROR)
             is ServiceResult.Value -> {
+                _autoCompleteList.value = emptyList()
                 observeRideModel(result.value, _passengerModel.value!!)
             }
         }
@@ -294,11 +295,19 @@ class PassengerDashboardViewModel(
         val currentRide = _rideModel.first()
 
         if (currentRide is ServiceResult.Value && currentRide.value != null) {
-            backstack.goTo(ChatKey(currentRide.value.rideId))
+            backstack.setHistory(
+                History.of(ChatKey(currentRide.value!!.rideId)),
+                StateChange.FORWARD
+            )
         }
     }
 
     fun goToProfile() {
-        backstack.goTo(ProfileSettingsKey())
+        //normally we would use backStack.goTo(...), but we always want to reload the state
+        //of the dashboard
+        backstack.setHistory(
+            History.of(ProfileSettingsKey()),
+            StateChange.FORWARD
+        )
     }
 }

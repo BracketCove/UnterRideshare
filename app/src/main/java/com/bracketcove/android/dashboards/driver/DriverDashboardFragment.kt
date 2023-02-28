@@ -88,7 +88,8 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
     }
 
     private fun updateUi(uiState: DriverDashboardUiState) {
-        if (uiState != DriverDashboardUiState.SearchingForPassengers) binding.toolbar.profileIcon.visibility = View.GONE
+        if (uiState != DriverDashboardUiState.SearchingForPassengers) binding.toolbar.profileIcon.visibility =
+            View.GONE
         else binding.toolbar.profileIcon.visibility = View.VISIBLE
 
         when (uiState) {
@@ -285,8 +286,10 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
                             passengersLoadingLayout.visibility = View.GONE
                             checkAgainBT.setOnClickListener(null)
 
-                            (passengerList.adapter as PassengerListAdapter)
-                                .submitList(models)
+                            if (passengerList.adapter != null) {
+                                (passengerList.adapter as PassengerListAdapter)
+                                    .submitList(models)
+                            }
                         }
                     }
             }
@@ -371,8 +374,10 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
                                 )
 
                                 route.legs.first().let { leg ->
-                                    binding.mapLayout.subtitle.text = getString(R.string.passenger_location)
-                                    binding.mapLayout.address.text = leg.endAddress ?: getString(R.string.unable_to_retrieve_address)
+                                    binding.mapLayout.subtitle.text =
+                                        getString(R.string.passenger_location)
+                                    binding.mapLayout.address.text = leg.endAddress
+                                        ?: getString(R.string.unable_to_retrieve_address)
 
                                     binding.tripDistance.text = buildString {
                                         append(getString(R.string.passenger_is))
@@ -397,7 +402,9 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
                         googleMap!!.addMarker(
                             MarkerOptions().apply {
                                 position(LatLng(uiState.driverLat, uiState.driverLon))
-                                val markerBitmap = requireContext().getDrawable(R.drawable.ic_car_marker)?.toBitmap()
+                                val markerBitmap =
+                                    requireContext().getDrawable(R.drawable.ic_car_marker)
+                                        ?.toBitmap()
                                 markerBitmap?.let {
                                     icon(BitmapDescriptorFactory.fromBitmap(it))
                                 }
@@ -480,7 +487,9 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
                         googleMap!!.addMarker(
                             MarkerOptions().apply {
                                 position(LatLng(uiState.driverLat, uiState.driverLon))
-                                val markerBitmap = requireContext().getDrawable(R.drawable.ic_car_marker)?.toBitmap()
+                                val markerBitmap =
+                                    requireContext().getDrawable(R.drawable.ic_car_marker)
+                                        ?.toBitmap()
                                 markerBitmap?.let {
                                     icon(BitmapDescriptorFactory.fromBitmap(it))
                                 }
@@ -626,8 +635,10 @@ class DriverDashboardFragment : Fragment(R.layout.fragment_driver_dashboard), On
     val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) requestLocation()
-        else {
+        if (isGranted) {
+            mapView?.getMapAsync(this)
+            requestLocation()
+        } else {
             Toast.makeText(
                 requireContext(),
                 R.string.permissions_required_to_use_this_app,

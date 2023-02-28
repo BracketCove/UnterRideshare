@@ -638,7 +638,10 @@ class PassengerDashboardFragment : Fragment(R.layout.fragment_passenger_dashboar
     val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) requestLocation()
+        if (isGranted){
+            mapView?.getMapAsync(this)
+            requestLocation()
+        }
         else {
             Toast.makeText(
                 requireContext(),
